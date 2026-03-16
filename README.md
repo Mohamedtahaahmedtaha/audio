@@ -8,8 +8,9 @@ The system abandons local model training in favor of a purely API-driven, cloud-
 
 ```mermaid
 flowchart TD
-    subgraph Data Sources
-        A[Audio Files / Streams]
+    subgraph Test Data Engineering
+        S1[Google AudioSet CSV/JSON] -- "scripts/download_audioset_samples.py" --> W1[.wav Samples]
+        S2[sireNNet Dataset] -- "scripts/prepare_test_data.py" --> W2[.wav Samples]
     end
 
     subgraph Docker Network
@@ -23,7 +24,7 @@ flowchart TD
     end
     
     %% Connections
-    A -- "POST /detect (multipart/form-data)" --> B
+    W1 & W2 -- "POST /detect (multipart/form-data)" --> B
     B -- "Base64 Audio + Zero-Shot Prompt" --> E
     E -- "JSON Prediction (event_type, confidence, is_critical)" --> B
     
@@ -38,13 +39,16 @@ flowchart TD
     class C infra;
     classDef service fill:#28a745,color:#fff,stroke:#333;
     class B,D service;
+    classDef engineering fill:#555,color:#fff,stroke:#333;
+    class S1,S2,W1,W2 engineering;
 ```
 
 ##  Features
 - **Zero-Shot Classification:** Powered by NVIDIA NIM (`gemma-3n-e4b-it`) — no local training required.
 - **Asynchronous Architecture:** Decoupled Inference and Notification layers using Redis.
 - **Microservices Deployment:** Fully Dockerized using `docker-compose`.
-- **Automated Testing:** E2E testing pipelines against local `.wav` files.
+- **Portable Data Engineering:** Automated extraction of test samples from **AudioSet** and **sireNNet** using `yt-dlp` and `pydub` (no system-wide `ffmpeg` required).
+- **Automated Testing:** E2E testing pipelines against local `.wav` files with detailed JSON reporting.
 
 ---
 
@@ -54,9 +58,8 @@ flowchart TD
 2. An **NVIDIA NIM API Key** is required.
 
 ### 1. Configure the Environment
-Copy the sample `.env` configuration file:
+Copy the sample `.env` configuration file and add your key:
 ```bash
-# Edit .env and paste your NVIDIA_API_KEY
 NVIDIA_API_KEY="nvapi-xxxx..."
 ```
 
@@ -65,37 +68,41 @@ Start the entire stack instantly using Docker Compose:
 ```bash
 docker-compose up --build
 ```
-This spins up three containers on a shared bridge network:
+This spins up three containers:
 - `redis`: The message broker.
-- `inference-api`: The FastAPI server exposing port `8000` locally.
+- `inference-api`: The FastAPI server exposing port `8000`.
 - `notification-worker`: The subscriber listening for alerts.
 
 ---
 
 ## Testing the Pipeline
 
-We provide an automated script to test the local system against a sample dataset (e.g., sireNNet).
+We provide comprehensive scripts to generate test data and simulate real-time detection.
 
-### Install dependencies locally
-Ensure your python virtual environment is active, then install the test runners:
+### Install local test dependencies
 ```bash
-pip install requests pandas yt-dlp
+pip install requests pandas yt-dlp pydub static-ffmpeg
 ```
 
-### Run the Automated E2E Pipeline
-Send a random batch of test samples through the system, outputting a beautiful console summary and a structured JSON report:
+### 1. Extract Test Samples (Data Engineering)
+Generate high-quality `.wav` samples for specific classes (Glass, Fire alarm, etc.) from Google AudioSet:
+```bash
+python scripts/download_audioset_samples.py
+```
+*This script uses `static-ffmpeg` to provide a portable FFmpeg backend automatically.*
+
+### 2. Run the Automated E2E Pipeline
+Send a random batch of test samples through the system:
 ```bash
 python scripts/test_pipeline.py
 ```
 
-### Test a Specific Audio File
-Want to test exactly one file and skip the random batching? 
+### 3. Test a Specific Audio File
 ```bash
 python scripts/test_pipeline.py \
-    --file "data/sireNNet/firetruck/sound_202_1.wav" \
-    --expected "firetruck"
+    --file "data/test_samples/audioset/glass_Werch1AIKnE.wav" \
+    --expected "glass"
 ```
-*Note: Make sure your `NVIDIA_API_KEY` in `.env` is valid, or the API will return a 401 Unauthorized error!*
 
 ---
 
@@ -107,15 +114,10 @@ audio/
 ├── .env                  (API Keys)
 ├── README.md
 ├── scripts/
-│   ├── prepare_test_data.py   (yt-dlp dataset engineering)
-│   └── test_pipeline.py       (Automated E2E HTTP Testing)
+│   ├── download_audioset_samples.py (AudioSet engineering)
+│   ├── prepare_test_data.py         (sireNNet engineering)
+│   └── test_pipeline.py             (Automated E2E HTTP Testing)
 └── services/
-    ├── audio-inference-service/
-    │   ├── Dockerfile
-    │   ├── requirements.txt
-    │   └── main.py       (FastAPI + NVIDIA NIM integration)
-    └── notification-service/
-        ├── Dockerfile
-        ├── requirements.txt
-        └── main.py       (Redis Subscriber)
+    ├── audio-inference-service/ (FastAPI + NVIDIA NIM)
+    └── notification-service/    (Redis Subscriber)
 ```
