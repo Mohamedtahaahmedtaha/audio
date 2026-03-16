@@ -1,8 +1,8 @@
-# 🚨 NIM-Driven Audio Event Detection System
+# NIM-Driven Audio Event Detection System
 
 An End-to-End, Microservices-based Audio Event Detection pipeline using **NVIDIA NIM API (Gemma-3)** for zero-shot classification of critical audio events (Ambulances, Police Sirens, Firetrucks, Breaking Glass, etc.).
 
-## 🏗️ Architecture
+##  Architecture
 
 The system abandons local model training in favor of a purely API-driven, cloud-native architecture. Audio streams are classified using a powerful multimodal LLM, and critical alerts are asynchronously dispatched via Redis Pub/Sub.
 
@@ -40,7 +40,7 @@ flowchart TD
     class B,D service;
 ```
 
-## 🚀 Features
+##  Features
 - **Zero-Shot Classification:** Powered by NVIDIA NIM (`gemma-3n-e4b-it`) — no local training required.
 - **Asynchronous Architecture:** Decoupled Inference and Notification layers using Redis.
 - **Microservices Deployment:** Fully Dockerized using `docker-compose`.
@@ -48,7 +48,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Requirements & Setup
+## Requirements & Setup
 
 1. **Docker & Docker Compose** must be installed.
 2. An **NVIDIA NIM API Key** is required.
@@ -72,7 +72,7 @@ This spins up three containers on a shared bridge network:
 
 ---
 
-## 🧪 Testing the Pipeline
+## Testing the Pipeline
 
 We provide an automated script to test the local system against a sample dataset (e.g., sireNNet).
 
@@ -99,7 +99,7 @@ python scripts/test_pipeline.py \
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 audio/
