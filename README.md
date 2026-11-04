@@ -1,5 +1,6 @@
 # NIM-Driven Audio Event Detection System
 
+
 An End-to-End, Microservices-based Audio Event Detection pipeline using **NVIDIA NIM API (Gemma-3)** for zero-shot classification of critical audio events (Ambulances, Police Sirens, Firetrucks, Breaking Glass, etc.).
 
 ##  Architecture
